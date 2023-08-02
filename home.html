@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEC Panel Load Estimation</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat&display=swap" rel="stylesheet">
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+
+    <style>
+        /* Custom styles */
+        header {
+            font-family: 'Playfair Display', serif;
+            font-size: 36px;
+            border-bottom: 1px solid #333333;
+            margin: 20px 0;
+            padding: 10px 0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #F9F8FF;
+        }
+
+        .btn-primary {
+            background-color: #028090 !important;
+            border-color: #028090 !important;
+        }
+
+        .breadcrumb-btn {
+            border: 1px solid darkslategray;
+            flex-grow: 1;
+            margin: 0 5px;
+        }
+
+        .breadcrumb-btn.active {
+            font-weight: bold;
+            background-color: #028090 !important;
+            color: white !important;
+        }
+
+        .breadcrumb-container {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+
+</head>
+<body>
+
+
+    <header class="container">
+        Electrical Load Calculation
+    </header>
+    
+    <div class="container">
+        <div class="btn-group breadcrumb-container" role="group" aria-label="Calculation Steps">
+            <button type="button" class="btn btn-light breadcrumb-btn" data-modal-target="squareFootageModal" onclick="showContentBlock('squareFootageModal')">Square Footage</button>
+            <button type="button" class="btn btn-light breadcrumb-btn" data-modal-target="smallApplianceModal" onclick="showContentBlock('smallApplianceModal')">Small Appliance</button>
+            <button type="button" class="btn btn-light breadcrumb-btn" data-modal-target="fixedAppliancesModal" onclick="showContentBlock('fixedAppliancesModal')">Fixed Appliances</button>
+            <button type="button" class="btn btn-light breadcrumb-btn" data-modal-target="generalApplianceModal" onclick="showContentBlock('generalApplianceModal')">General Load</button>
+            <button type="button" class="btn btn-light breadcrumb-btn" data-modal-target="coolingHeatingLoadModal" onclick="showContentBlock('coolingHeatingLoadModal')">Heating & Cooling</button>
+            <button type="button" class="btn btn-light breadcrumb-btn" data-modal-target="totalLoadModal" onclick="showContentBlock('totalLoadModal')">Total Load</button>
+        </div>
+        <div class="row mt-4">
+            <!-- Left Panel: Form Entry -->
+            <div class="col-lg-8">
+                <!-- Modals -->
+                <!-- Square Footage Modal -->
+                <div id="squareFootageModal" class="content-block show" style="display: block;">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="squareFootageModalLabel">Home Size</h5>
+                    </div>
+                    <div class="modal-body">
+                        <form id="squareFootageForm" onsubmit="event.preventDefault(); handleNextClick('squareFootageModal');">
+                        <div class="form-group">
+                            <label for="squareFootage">Square Footage</label>
+                            <input type="number" class="form-control" id="squareFootage" placeholder="Enter square footage">
+                        </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="handleNextClick('squareFootageModal')">Next</button>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- Small Appliance Modal -->
+                <div class="content-block" id="smallApplianceModal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="smallApplianceModalLabel">Small appliance and laundry branch circuits</h5>
+
+                        </div>
+                        <div class="modal-body">
+                        <form id="smallApplianceForm" onsubmit="event.preventDefault(); handleNextClick('smallApplianceModal');">
+                            <div class="form-group">
+                            <label for="smallApplianceCircuits">Number of Circuits</label>
+                            <input type="number" class="form-control" id="smallApplianceCircuits" placeholder="Enter number of circuits">
+                            </div>
+                        </form>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="handleNextClick('smallApplianceModal')">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fixed Appliances Modal -->
+                <div class="content-block" id="fixedAppliancesModal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="fixedAppliancesModalLabel">Fixed appliances</h5>
+                        </div>
+                        <div class="modal-body">
+                            <form id="fixedAppliancesForm" onsubmit="event.preventDefault(); handleNextClick('fixedAppliancesModal')">
+                                <!-- List of all appliances with input fields -->
+                                <!-- Example for Oven -->
+                                <div class="form-group row">
+                                    <label for="ovenVA" class="col-sm-4 col-form-label">Oven</label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="ovenVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="cooktopVA" class="col-sm-4 col-form-label">Cooktop</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="cooktopVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="fixedMicrowaveVA" class="col-sm-4 col-form-label">Fixed microwave</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="fixedMicrowaveVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="waterHeaterVA" class="col-sm-4 col-form-label">Water heater</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="waterHeaterVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="elecClothesDryerVA" class="col-sm-4 col-form-label">Electric clothes dryer</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="elecClothesDryerVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="dishwasherVA" class="col-sm-4 col-form-label">Dishwasher</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="dishwasherVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="disposalVA" class="col-sm-4 col-form-label">Disposal</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="disposalVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="wellPumpVA" class="col-sm-4 col-form-label">Well pump</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="wellPumpVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="sumpPumpVA" class="col-sm-4 col-form-label">Sump pump</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="sumpPumpVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="garageDoorOpenerVA" class="col-sm-4 col-form-label">Garage door opener</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="garageDoorOpenerVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="hotTubVA" class="col-sm-4 col-form-label">Hot tub</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="hotTubVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="otherVA" class="col-sm-4 col-form-label">Other</label>
+                                    <div class="col-sm-8">
+                                    <input type="number" class="form-control" id="otherVA" placeholder="Enter VA">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="handleNextClick('fixedAppliancesModal')">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adjusted general and appliance loads modal -->
+                <div class="content-block" id="generalApplianceModal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="generalApplianceModalLabel">General load</h5>
+
+                        </div>
+                        <div class="modal-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">Unadjusted general load: <span data-display="unadjustedGeneralLoadDisplay"></span></li>
+                                <li class="list-group-item">First 8,000 VA at 100%: <span data-display="baseLoadDisplay"></span></li>
+                                <li class="list-group-item">Remainder at 40%: <span data-display="excessLoadDisplay"></span></li>
+                                <li class="list-group-item">Adjusted general load: <span data-display="adjustedGeneralLoadDisplay"></span></li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="handleNextClick('generalApplianceModal')">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cooling and heating load modal -->
+                <div class="content-block" id="coolingHeatingLoadModal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="coolingHeatingLoadModalLabel">Heating and cooling load</h5>
+
+                        </div>
+                        <div class="modal-body">
+                            <form id="coolingHeatingLoadForm" onsubmit="event.preventDefault(); handleNextClick('coolingHeatingLoadModal');">
+
+                                <h5>Cooling load</h5>
+                                <div class="form-group row">
+                                    <label for="outdoorAC" class="col-sm-4 col-form-label">Outdoor unit for AC: </label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="outdoorAC" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="airHandlerAC" class="col-sm-4 col-form-label">Air handler for AC: </label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="airHandlerAC" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label font-weight-bold">Total cooling load:</label>
+                                        <div class="col-sm-8">
+                                            <span data-display="totalCoolingDisplay"></span>
+                                        </div>
+                                </div>
+
+                                <h5>Heating load</h5>
+                                <div class="form-group row">
+                                    <label for="outdoorHP" class="col-sm-4 col-form-label">Outdoor unit for heat pump: </label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="outdoorHP" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="airHandlerHP" class="col-sm-4 col-form-label">Air handler for heat pump: </label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="airHandlerHP" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="backupElectricHeat" class="col-sm-4 col-form-label">Backup electric heat: </label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="backupElectricHeat" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label for="baseboardSpaceHeaters" class="col-sm-4 col-form-label">Electric baseboard / space heaters: </label>
+                                    <div class="col-sm-8">
+                                        <input type="number" class="form-control" id="baseboardSpaceHeaters" placeholder="Enter VA">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label font-weight-bold">Total heating load:</label>
+                                        <div class="col-sm-8">
+                                            <span data-display="totalHeatingDisplay"></span>
+                                        </div>
+                                </div>
+
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label font-weight-bold">Greater of heating and cooling load:</label>
+                                        <div class="col-sm-8">
+                                            <span data-display="totalHeatingCoolingDisplay"></span>
+                                        </div>
+                                </div>
+
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="handleNextClick('coolingHeatingLoadModal');">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total load and required amps -->
+                <div class="content-block" id="totalLoadModal" style="display: none;">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="totalLoadModalLabel">Total load and requried service</h5>
+
+                        </div>
+                        <div class="modal-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">Adjusted general load: <span data-display="adjustedGeneralLoadDisplay"></span></li>
+                                <li class="list-group-item">Plus: Heating & cooling load: <span data-display="totalHeatingCoolingDisplay"></span></li>
+                                <li class="list-group-item">Total load: <span data-display="totalloadDisplay"></span></li>
+                                <li class="list-group-item">Required service: <span data-display="requiredServiceDisplay"></span></li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Panel: Running Total -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        Running Total
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Square Footage: <span data-display="sfDisplay"></span> x 3</li>
+                        <li class="list-group-item">Small Appliance: <span data-display="saDisplay"></span> x 1,500</li>
+                        <li class="list-group-item">Fixed Appliances: <span data-display="faDisplay"></span></li>
+                        <li class="list-group-item">Adjusted General Load: <span data-display="adjustedGeneralLoadDisplay"></span></li>
+                        <li class="list-group-item">Heating & Cooling Load: <span data-display="totalHeatingCoolingDisplay"></span></li>
+                        <li class="list-group-item font-weight-bold">Total Load: <span data-display="totalloadDisplay"></span></li>
+                        <li class="list-group-item font-weight-bold">Total Required Service: <span data-display="requiredServiceDisplay"></span></li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+<script>
+
+    let globalData = {
+            squareFootage: {
+                value: "",
+                displayId: "sfDisplay",
+                units: "SqFt"
+            },
+            smallApplianceCircuits: {
+                value: "",
+                displayId: "saDisplay",
+                units: ""
+            },
+            ovenVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            cooktopVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            fixedMicrowaveVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            waterHeaterVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            elecClothesDryerVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            dishwasherVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            disposalVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            wellPumpVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            sumpPumpVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            garageDoorOpenerVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            hotTubVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            otherVA: {
+                value: "",
+                displayId: "",
+                units: ""
+            },
+            fixedApplianceVA:{
+                value: "",
+                displayId: "faDisplay",
+                units: "VA"
+            },
+            unadjustedGeneralLoad: {
+                value: "",
+                displayId: "unadjustedGeneralLoadDisplay",
+                units: "VA"
+            },
+            baseLoad: {
+                value: "",
+                displayId: "baseLoadDisplay",
+                units: "VA"
+            },
+            excessLoad: {
+                value: "",
+                displayId: "excessLoadDisplay",
+                units: "VA"
+            },
+            adjustedGeneralLoad: {
+                value: "",
+                displayId: "adjustedGeneralLoadDisplay",
+                units: "VA"
+            },
+            outdoorAC: {
+                value: "",
+                displayId: "",
+                units: "VA"
+            },
+            airHandlerAC: {
+                value: "",
+                displayId: "",
+                units: "VA"
+            },
+            totalCooling: {
+                value: "",
+                displayId: "totalCoolingDisplay",
+                units: "VA"
+            },
+            outdoorHP: {
+                value: "",
+                displayId: "",
+                units: "VA"
+            },
+            airHandlerHP: {
+                value: "",
+                displayId: "",
+                units: "VA"
+            },
+            backupElectricHeat: {
+                value: "",
+                displayId: "",
+                units: "VA"
+            },
+            baseboardSpaceHeaters: {
+                value: "",
+                displayId: "",
+                units: "VA"
+            },
+            totalHeating: {
+                value: "",
+                displayId: "totalHeatingDisplay",
+                units: "VA"
+            },
+            totalHeatingCooling: {
+                value: "",
+                displayId: "totalHeatingCoolingDisplay",
+                units: "VA"
+            },
+            totalLoad: {
+                value: "",
+                displayId: "totalloadDisplay",
+                units: "VA"
+            },
+            requiredService: {
+                value: "",
+                displayId: "requiredServiceDisplay",
+                units: "A"
+            }
+    }
+
+    let updateTimeout;
+
+    const modalSequence = [
+        "squareFootageModal",
+        "smallApplianceModal",
+        "fixedAppliancesModal",
+        "generalApplianceModal",
+        "coolingHeatingLoadModal",
+        "totalLoadModal"
+    ];
+
+    function submitData() {
+        
+        for (let key in globalData) {
+            let inputElement = document.getElementById(key);
+            if (inputElement) {
+                globalData[key].value = Number(inputElement.value) || Number(globalData[key].value);
+            }
+        }
+
+        globalData['fixedApplianceVA'].value = parseInt(globalData.ovenVA.value) + 
+            parseInt(globalData.cooktopVA.value) + 
+            parseInt(globalData.fixedMicrowaveVA.value) + 
+            parseInt(globalData.waterHeaterVA.value) + 
+            parseInt(globalData.elecClothesDryerVA.value) + 
+            parseInt(globalData.dishwasherVA.value) + 
+            parseInt(globalData.disposalVA.value) + 
+            parseInt(globalData.wellPumpVA.value) + 
+            parseInt(globalData.sumpPumpVA.value) + 
+            parseInt(globalData.garageDoorOpenerVA.value) + 
+            parseInt(globalData.hotTubVA.value) + 
+            parseInt(globalData.otherVA.value);
+
+        // Clear any existing timeout to ensure we don't update prematurely
+        if (updateTimeout) {
+            clearTimeout(updateTimeout);
+        }
+
+        // Set a delay of 500ms before updating the display
+        updateTimeout = setTimeout(() => {
+            updateDisplays();
+        }, 1000);
+    }
+
+    function showContentBlock(blockId) {
+        // Hide all content blocks
+        let blocks = document.getElementsByClassName('content-block');
+        for (let block of blocks) {
+            block.style.display = 'none';
+        }
+
+        // Show the requested content block
+        document.getElementById(blockId).style.display = 'block';
+
+        // Restore input values
+        for (let key in globalData) {
+            let inputElement = document.getElementById(key);
+            if (inputElement) {
+                inputElement.value = globalData[key].value;
+            }
+        }
+    }
+
+    function showNextModal(currentModalId) {
+        let currentIndex = modalSequence.indexOf(currentModalId);
+        if (currentIndex !== -1 && currentIndex < modalSequence.length - 1) {
+            
+            // Current modal fade out and slide to left
+            let currentModal = document.getElementById(currentModalId);
+            currentModal.classList.add('animate__animated', 'animate__fadeOutLeft', 'animate__fast');
+            
+            // Once the animation ends, hide the current modal
+            currentModal.addEventListener('animationend', function() {
+                currentModal.style.display = 'none';
+                currentModal.classList.remove('animate__animated', 'animate__fadeOutLeft');
+
+                // Next modal fade in and slide from right
+                let nextModalId = modalSequence[currentIndex + 1];
+                let nextModal = document.getElementById(nextModalId);
+                nextModal.style.display = 'block';
+                nextModal.classList.add('animate__animated', 'animate__fadeInRight', 'animate__fast');
+                
+                // Once the animation ends, remove the animation classes
+                nextModal.addEventListener('animationend', function() {
+                    nextModal.classList.remove('animate__animated', 'animate__fadeInRight');
+                }, { once: true });
+
+
+                // Set the active breadcrumb
+                setActiveBreadcrumb(nextModalId);
+            }, { once: true });
+        }
+    }
+
+    function setActiveBreadcrumb(modalId) {
+        let breadcrumbButtons = document.querySelectorAll('.breadcrumb-btn');
+        breadcrumbButtons.forEach(button => button.classList.remove('active'));
+
+        // Add active class to the current modal's breadcrumb button
+        let activeBreadcrumb = document.querySelector(`[data-modal-target="${modalId}"]`);
+        if (activeBreadcrumb) {
+            activeBreadcrumb.classList.add('active');
+        }
+    }
+
+    setActiveBreadcrumb(modalSequence[0]);
+
+    // Add event listeners to breadcrumb buttons
+    let breadcrumbButtons = document.querySelectorAll('.breadcrumb-btn');
+    breadcrumbButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            let targetModalId = button.getAttribute('data-modal-target');
+
+            // Hide all modals
+            let modals = document.querySelectorAll('.content-block');
+            modals.forEach(modal => {
+                modal.style.display = 'none'; // You can add more complex hiding logic here if you want, like animations
+            });
+
+            // Show the clicked modal
+            document.getElementById(targetModalId).style.display = 'block'; // You can also add animations here if you wish
+
+            // Set active breadcrumb
+            setActiveBreadcrumb(targetModalId);
+        });
+    });
+
+    function handleNextClick(currentModalId) {
+        submitData();
+        showNextModal(currentModalId);
+    }
+
+
+    function updateDisplays() {
+        calculateLoad();
+        for (let key in globalData) {
+            let displayElements = document.querySelectorAll(`[data-display="${globalData[key].displayId}"]`);
+            displayElements.forEach(element => {
+                element.innerText = numberWithCommas(globalData[key].value) + " " + globalData[key].units;
+            });
+        }
+    }
+
+    function calculateLoad() {
+        let squareFootageLoad = globalData.squareFootage.value * 3;
+        let smallApplianceLoad = globalData.smallApplianceCircuits.value * 1500;
+        let fixedApplianceLoad = globalData.fixedApplianceVA.value;
+        let unadjustedGeneralLoad = squareFootageLoad + smallApplianceLoad + fixedApplianceLoad;
+
+        const BASE_LOAD = 8000;
+        const BASE_RATE = 1;
+        const EXCESS_RATE = 0.4;
+
+        // First 8000VAs at 100%:
+        let baseLoad = Math.min(unadjustedGeneralLoad, BASE_LOAD) * BASE_RATE;
+
+        // Remainder at 40%:
+        let excessLoad = Math.max(unadjustedGeneralLoad - BASE_LOAD, 0) * EXCESS_RATE;
+
+        let adjustedLoad = baseLoad + excessLoad;
+
+        let totalCooling = globalData.outdoorAC.value + globalData.airHandlerAC.value;
+        let totalHeating = globalData.outdoorHP.value + globalData.airHandlerHP.value + globalData.backupElectricHeat.value + globalData.baseboardSpaceHeaters.value;
+        
+        let totalHeatingCooling = Math.max(totalCooling, totalHeating);
+
+        let totalLoad = adjustedLoad + totalHeatingCooling;
+
+        let requiredService = Math.ceil(totalLoad / 240);
+
+        globalData['unadjustedGeneralLoad'].value = unadjustedGeneralLoad;
+        globalData['baseLoad'].value = baseLoad;
+        globalData['excessLoad'].value = excessLoad;
+        globalData['adjustedGeneralLoad'].value = adjustedLoad;
+        globalData['totalCooling'].value = totalCooling;
+        globalData['totalHeating'].value = totalHeating;
+        globalData['totalHeatingCooling'].value = totalHeatingCooling;
+        globalData['totalLoad'].value = totalLoad;
+        globalData['requiredService'].value = requiredService;
+    }
+
+    for (let key in globalData) {
+        let inputElement = document.getElementById(key);
+        if (inputElement) {
+            inputElement.addEventListener("input", function() {
+                submitData();
+            });
+        }
+    }
+
+    function numberWithCommas(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+</script>
+
+</body>
+</html>
